@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import mongoose from "mongoose";
 import articleRoutes from "./routes/articleRoutes.js";
 import cityRoutes from "./routes/cityRoutes.js";
@@ -11,7 +12,7 @@ const PORT = process.env.PORT || 3001;
 mongoose.connect(
   "mongodb+srv://vaga:vaga@cluster0.zo3h2im.mongodb.net/vaga?retryWrites=true&w=majority"
 );
-
+app.use(cors());
 app.use(express.json());
 
 app.use("/articles", articleRoutes);
