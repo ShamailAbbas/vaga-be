@@ -13,9 +13,13 @@ router.get("/", async (req, res) => {
 });
 
 // Get a single article
-router.get("/:slug", async (req, res) => {
+router.get("/:state/:city/:slug", async (req, res) => {
   try {
-    const article = await Article.findOne({ slug: req.params.slug });
+    const article = await Article.findOne({
+      state: req.params.state,
+      city: req.params.city,
+      slug: req.params.slug,
+    });
     if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
