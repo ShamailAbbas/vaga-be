@@ -28,12 +28,43 @@ router.get("/:id", async (req, res) => {
 });
 // Get a Reviews by city
 router.get("/city/:city", async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10; // Adjust the limit as needed
+
   try {
-    const review = await Review.find({ city: req.params.city });
-    if (!review) {
-      return res.status(404).json({ message: "Review not found" });
+    const aggregationPipeline = [
+      {
+        $match: { city: req.params.city },
+      },
+      {
+        $facet: {
+          reviews: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+          totalReviews: [{ $count: "count" }],
+        },
+      },
+      {
+        $project: {
+          reviews: 1,
+          totalReviews: { $arrayElemAt: ["$totalReviews.count", 0] },
+        },
+      },
+    ];
+
+    const result = await Review.aggregate(aggregationPipeline);
+
+    if (result.length === 0) {
+      return res.status(404).json({ message: "Reviews not found" });
     }
-    res.json(review);
+
+    const { reviews, totalReviews } = result[0];
+    const totalPages = Math.ceil(totalReviews / limit);
+
+    res.json({
+      totalReviews,
+      currentPage: page,
+      totalPages,
+      reviews,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
