@@ -26,13 +26,7 @@ router.get("/", async (req, res) => {
     const skip = (page - 1) * limit;
 
     // Specify the fields you are interested in
-    const selectedFields = [
-      "city",
-      "state_id",
-      "state_name",
-      "county_fips",
-      "county_name",
-    ];
+    const selectedFields = ["city", "state_name"];
 
     // Fetch cities with pagination and selected fields
     const cities = await City.find()
