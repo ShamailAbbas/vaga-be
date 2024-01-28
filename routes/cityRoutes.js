@@ -3,10 +3,24 @@ import fs from "fs";
 import City from "../models/cityModel.js";
 const router = express.Router();
 
-// Get a single article
+// Get a single city
 router.get("/:state_name", async (req, res) => {
   try {
     const city = await City.findOne({ state_name: req.params.state_name });
+    if (!city) {
+      return res.status(404).json({ message: "city not found" });
+    }
+    res.json(city);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+router.get("/:state_name/:city", async (req, res) => {
+  try {
+    const city = await City.findOne({
+      state_name: req.params.state_name,
+      city: req.params.city,
+    });
     if (!city) {
       return res.status(404).json({ message: "city not found" });
     }
