@@ -19,12 +19,12 @@ mongoose.connect(
 app.use(cors());
 app.use(express.json());
 
-app.use("/articles", articleRoutes);
-app.use("/faqs", faqRoutes);
-app.use("/cities", cityRoutes);
-app.use("/attornies", attornyRoutes);
-app.use("/reviews", reviewRoutes);
-app.use("/videos", videoRoutes);
+app.use("/api/articles", articleRoutes);
+app.use("/api/faqs", faqRoutes);
+app.use("/api/cities", cityRoutes);
+app.use("/api/attornies", attornyRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/videos", videoRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port:${PORT}`);

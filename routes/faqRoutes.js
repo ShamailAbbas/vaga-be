@@ -2,6 +2,7 @@ import Faq from "../models/FaqModel.js";
 import generateFaq from "../utils/generateFaq.js";
 import parseFAQs from "../utils/parseFaq.js";
 import express from "express";
+import fs from "fs";
 const router = express.Router();
 // Get all faq
 router.get("/", async (req, res) => {
@@ -10,6 +11,62 @@ router.get("/", async (req, res) => {
     res.json(faqs);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/generate", async (req, res) => {
+  const failed = [];
+
+  try {
+    const rawData = fs.readFileSync("data.json");
+    const citiesData = JSON.parse(rawData);
+
+    for (const cityData of citiesData) {
+      try {
+        if (cityData.index > 200) {
+          break; // Use break to exit the loop
+        }
+
+        const faqExists = await Faq.find({
+          state: cityData.state_name,
+          city: cityData.city,
+        });
+
+        if (!faqExists.length) {
+          const response = await generateFaq(
+            cityData.city,
+            cityData.state_name
+          );
+          let faqs;
+
+          if (response?.choices) {
+            faqs = parseFAQs(response.choices[0].message.content);
+          }
+
+          if (faqs && faqs.length > 0) {
+            for (const faqdata of faqs) {
+              try {
+                const faq = new Faq({ ...faqdata, city: cityData.city });
+                await faq.save();
+              } catch (error) {
+                failed.push({
+                  city: cityData.city,
+                  state_name: cityData.state_name,
+                });
+                console.error(`Error saving faqs for city `, cityData.city);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        failed.push({ city: cityData.city, state_name: cityData.state_name });
+        console.error(`Error saving city ${cityData.city}: ${error.message}`);
+      }
+    }
+
+    res.status(201).json({ failed });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 });
 

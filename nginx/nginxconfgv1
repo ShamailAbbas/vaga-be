@@ -1,0 +1,103 @@
+# Redirect www to non-www over HTTP
+server {
+    listen 80;
+    server_name www.personalinjurynearme.attorney;
+    return 301 http://personalinjurynearme.attorney$request_uri;
+}
+
+# Redirect HTTP to HTTPS for the main domain
+server {
+    listen 80;
+    server_name personalinjurynearme.attorney;
+    location /api {
+        return 301 https://$host$request_uri;
+    }
+    return 301 https://$host$request_uri;
+}
+
+# Main domain configuration with SSL
+server {
+    listen 443 ssl;
+    server_name personalinjurynearme.attorney;
+
+    ssl_certificate /etc/letsencrypt/live/personalinjurynearme.attorney/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/personalinjurynearme.attorney/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location /api {
+        proxy_pass http://localhost:3001;  # Change the port if your API is running on a different port
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Additional configurations for other dynamic routes can be added as needed
+
+    location /admin {
+        return 404;  # Return 404 for any paths under the main domain
+    }
+
+    location / {
+        proxy_pass http://localhost:3000;  # Frontend application
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+
+# Redirect HTTP to HTTPS for the subdomain
+server {
+    listen 80;
+    server_name admin.personalinjurynearme.attorney;
+    return 301 https://$host$request_uri;
+}
+
+# Subdomain configuration with SSL
+server {
+    listen 443 ssl;
+    server_name admin.personalinjurynearme.attorney;
+
+    ssl_certificate /etc/letsencrypt/live/personalinjurynearme.attorney/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/personalinjurynearme.attorney/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        rewrite ^/admin(.*)$ $1 break;  # Remove /admin from the request URI
+        proxy_pass http://localhost:3000;  # Change the port if your app is running on a different port
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    location ~ ^/admin/([^/]+)/([^/]+)(?:/([^/]+))? {
+        proxy_pass http://localhost:3000/admin/$1/$2/$3;  # Change the port if your app is running on a different port
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    location ~ ^/admin/([^/]+)/([^/]+)$ {
+        proxy_pass http://localhost:3000/admin/$1/$2;  # Change the port if your app is running on a different port
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Additional configurations for other dynamic routes can be added as needed
+
+    location /admin {
+        return 404;  # Return 404 for any other paths under the subdomain
+    }
+}
