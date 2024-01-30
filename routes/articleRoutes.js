@@ -32,11 +32,48 @@ router.get("/:state/:city/:slug", async (req, res) => {
 // get By city
 router.get("/city/:city", async (req, res) => {
   try {
-    const article = await Article.find({ city: req.params.city });
-    if (!article) {
-      return res.status(404).json({ message: "Article not found" });
+    const page = parseInt(req.query.page) || 1; // Current page (default: 1)
+    const pageSize = parseInt(req.query.limit) || 3; // Number of articles per page (default: 10)
+
+    const skip = (page - 1) * pageSize;
+
+    // Using Mongoose aggregate to paginate and get total count
+    const result = await Article.aggregate([
+      {
+        $match: { city: req.params.city },
+      },
+      {
+        $sort: { createdAt: -1 }, // Replace 'createdAt' with the actual field representing creation date
+      },
+      {
+        $facet: {
+          articles: [{ $skip: skip }, { $limit: pageSize }],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+      {
+        $project: {
+          articles: 1,
+          totalCount: { $arrayElemAt: ["$totalCount.count", 0] },
+        },
+      },
+    ]);
+
+    const articles = result[0].articles;
+    const totalCount = result[0].totalCount;
+
+    if (articles.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No articles found in the specified city" });
     }
-    res.json(article);
+
+    res.json({
+      articles,
+      totalCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / pageSize),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -37,6 +37,9 @@ router.get("/city/:city", async (req, res) => {
         $match: { city: req.params.city },
       },
       {
+        $sort: { createdAt: -1 }, // Replace 'createdAt' with the actual field representing creation date
+      },
+      {
         $facet: {
           reviews: [{ $skip: (page - 1) * limit }, { $limit: limit }],
           totalReviews: [{ $count: "count" }],

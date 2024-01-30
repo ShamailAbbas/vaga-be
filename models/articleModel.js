@@ -10,6 +10,9 @@ const articleSchema = new mongoose.Schema({
   state: String,
   city: String,
   slug: String,
+  
+}, {
+  timestamps: true, // This option adds 'createdAt' and 'updatedAt' fields
 });
 
 const Article = mongoose.model("Article", articleSchema);

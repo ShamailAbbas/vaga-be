@@ -27,6 +27,9 @@ const reviewSchema = new mongoose.Schema({
   city: {
     type: String,
   },
+  
+}, {
+  timestamps: true, // This option adds 'createdAt' and 'updatedAt' fields
 });
 
 const Review = mongoose.model("Review", reviewSchema);

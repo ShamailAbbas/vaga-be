@@ -43,11 +43,48 @@ router.get("/:id", async (req, res) => {
 // get By city
 router.get("/city/:city", async (req, res) => {
   try {
-    const attorney = await Attorney.find({ city: req.params.city });
-    if (!attorney) {
-      return res.status(404).json({ message: "Attorney not found" });
+    const page = parseInt(req.query.page) || 1; // Current page (default: 1)
+    const pageSize = parseInt(req.query.limit) || 3; // Number of attorneys per page (default: 10)
+
+    const skip = (page - 1) * pageSize;
+
+    // Using Mongoose aggregate to paginate and get total count
+    const result = await Attorney.aggregate([
+      {
+        $match: { city: req.params.city },
+      },
+      {
+        $sort: { createdAt: -1 }, // Replace 'createdAt' with the actual field representing creation date
+      },
+      {
+        $facet: {
+          attorneys: [{ $skip: skip }, { $limit: pageSize }],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+      {
+        $project: {
+          attorneys: 1,
+          totalCount: { $arrayElemAt: ["$totalCount.count", 0] },
+        },
+      },
+    ]);
+
+    const attorneys = result[0].attorneys;
+    const totalCount = result[0].totalCount;
+
+    if (attorneys.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No attorneys found in the specified city" });
     }
-    res.json(attorney);
+
+    res.json({
+      attorneys,
+      totalCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / pageSize),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

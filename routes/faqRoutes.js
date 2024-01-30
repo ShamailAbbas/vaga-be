@@ -73,14 +73,48 @@ router.get("/generate", async (req, res) => {
 // Get a  faq by city
 router.get("/:city", async (req, res) => {
   try {
-    const faq = await Faq.find({
-      state: req.params.state,
-      city: req.params.city,
-    });
-    if (!faq) {
-      return res.status(404).json({ message: "Faq not found" });
+    const page = parseInt(req.query.page) || 1; // Current page (default: 1)
+    const pageSize = parseInt(req.query.limit) || 10; // Number of FAQs per page (default: 10)
+
+    const skip = (page - 1) * pageSize;
+
+    // Using Mongoose aggregate to paginate and get total count
+    const result = await Faq.aggregate([
+      {
+        $match: {
+          state: req.params.state,
+          city: req.params.city,
+        },
+      },
+      {
+        $facet: {
+          faqs: [{ $skip: skip }, { $limit: pageSize }],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+      {
+        $project: {
+          faqs: 1,
+          totalCount: { $arrayElemAt: ["$totalCount.count", 0] },
+        },
+      },
+    ]);
+
+    const faqs = result[0].faqs;
+    const totalCount = result[0].totalCount;
+
+    if (faqs.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No FAQs found in the specified city and state" });
     }
-    res.json(faq);
+
+    res.json({
+      faqs,
+      totalCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / pageSize),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

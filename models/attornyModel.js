@@ -25,6 +25,9 @@ const attorneySchema = new mongoose.Schema({
   website: {
     type: String,
   },
+ 
+}, {
+  timestamps: true, // This option adds 'createdAt' and 'updatedAt' fields
 });
 
 const Attorney = mongoose.model("Attorney", attorneySchema);
