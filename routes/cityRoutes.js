@@ -30,6 +30,16 @@ router.get("/:state_name/:city", async (req, res) => {
   }
 });
 
+router.get("/all", async (req, res) => {
+  try {
+    const cities = await City.find();
+
+    res.json(cities);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 router.get("/", async (req, res) => {
   try {
     // Extract page and limit from query parameters or use default values
