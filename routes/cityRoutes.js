@@ -3,14 +3,24 @@ import fs from "fs";
 import City from "../models/cityModel.js";
 const router = express.Router();
 
+
+
+
 // Get a single city
 router.get("/:state_name", async (req, res) => {
   try {
-    const city = await City.findOne({ state_name: req.params.state_name });
-    if (!city) {
-      return res.status(404).json({ message: "city not found" });
+    if(req.params.state_name=='all'){
+      const cities = await City.find();
+
+      res.json(cities);
+    }else{
+      const city = await City.findOne({ state_name: req.params.state_name });
+      if (!city) {
+        return res.status(404).json({ message: "city not found" });
+      }
+      res.json(city);
     }
-    res.json(city);
+ 
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -30,19 +40,12 @@ router.get("/:state_name/:city", async (req, res) => {
   }
 });
 
-router.get("/all", async (req, res) => {
-  try {
-    const cities = await City.find();
 
-    res.json(cities);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
 
 router.get("/", async (req, res) => {
   try {
     // Extract page and limit from query parameters or use default values
+    console.log('here /')
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
 
